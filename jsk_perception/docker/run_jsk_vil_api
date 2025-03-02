@@ -19,6 +19,7 @@ parser = argparse.ArgumentParser(description="JSK Vision and Language API runner
 parser.add_argument("model", choices=CONTAINERS.keys(),
                     help="Vision and Language model you want to run", type=str)
 parser.add_argument("-p", "--port", default=8888, help="Port of the API server", type=int)
+parser.add_argument("-gpu_id", "-g", type=str, default="all", help="gpu index to use in docker")
 parser.add_argument("--ofa_task", default="caption",
                     help="Tasks to be loaded in OFA. OFA loads all tasks by default and requires large amount of GPU RAM")
 parser.add_argument("--ofa_model_scale", default="huge", choices=OFA_MODEL_SCALES,
@@ -32,11 +33,16 @@ if __name__ == "__main__":
     if import_rospy and len(sys.argv) != len(rospy.myargv()): # roslaunch
         rospy.init_node("jsk_vil_docker_manager")
     port_option = "{}:8080".format(str(args.port))
+    if args.gpu_id != "all":
+        gpu_option = "device={}".format(args.gpu_id)
+    else:
+        gpu_option = "all"
     _ros_home = os.getenv("ROS_HOME", os.path.join(os.environ["HOME"],".ros"))
     mount_option = "{}:/var/mount/params".format(os.path.join(_ros_home, "data", "jsk_perception", "vil_params"))
     docker_image = "{}:latest".format(CONTAINERS[args.model])
 
-    cmd = ["docker", "run", "--rm", "-it", "--gpus", "all",
+    cmd = ["docker", "run", "--rm", "-it",
+           "--gpus", gpu_option,
            "-p", port_option,
            "-v", mount_option]
 
